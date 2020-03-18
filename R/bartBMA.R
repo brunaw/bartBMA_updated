@@ -74,37 +74,37 @@
 #' only_max_num_trees = 1,split_rule_node = 0)
 
 
-bartBMA<-function(x,...)UseMethod("bartBMA")
+bartBMA <- function(x,...) UseMethod("bartBMA")
 
 #' @rdname bartBMA
 #' @export bartBMA.default
 #' @export
-bartBMA.default<-function(formula, 
-                          data,
-                          a = 3, nu = 3,
-                          sigquant = 0.9,
-                          c = 1000,
-                          pen = 12,
-                          num_cp = 20,
-                          x.test = matrix(0.0,0,0),
-                          num_rounds = 5,
-                          alpha = 0.95, beta = 2, 
-                          split_rule_node = FALSE,
-                          cp_method = "PELT",
-                          maxOWsize = 100,
-                          num_splits = 5,
-                          gridsize = 10,
-                          zero_split = TRUE,
-                          only_max_num_trees = 1,
-                          min_num_obs_for_split = 2, 
-                          min_num_obs_after_split = 2,
-                          exact_residuals = 1,
-                          spike_tree = 0, 
-                          s_t_hyperprior = 1, 
-                          p_s_t = 0.5, a_s_t = 1,b_s_t = 3,
-                          lambda_poisson = 10,less_greedy = 0,
-                          x = NULL, y = NULL, 
-                          ...){
+bartBMA.default <- function(formula, 
+                            data,
+                            a = 3, nu = 3,
+                            sigquant = 0.9,
+                            c = 1000,
+                            pen = 12,
+                            num_cp = 20,
+                            x.test = matrix(0.0,0,0),
+                            num_rounds = 5,
+                            alpha = 0.95, beta = 2, 
+                            split_rule_node = FALSE,
+                            cp_method = "PELT",
+                            maxOWsize = 100,
+                            num_splits = 5,
+                            gridsize = 10,
+                            zero_split = TRUE,
+                            only_max_num_trees = 1,
+                            min_num_obs_for_split = 2, 
+                            min_num_obs_after_split = 2,
+                            exact_residuals = 1,
+                            spike_tree = 0, 
+                            s_t_hyperprior = 1, 
+                            p_s_t = 0.5, a_s_t = 1,b_s_t = 3,
+                            lambda_poisson = 10,less_greedy = 0,
+                            x = NULL, y = NULL, 
+                            ...){
   
   #---------------------------------------------------------------------
   ## Formula interface: extracting response and covariates 
@@ -148,7 +148,7 @@ bartBMA.default<-function(formula,
   
   # Change point method 
   gridpoint <- ifelse(cp_method == "PELT", 0, 1)
-
+  
   num_obs = nrow(x)
   num_vars = ncol(x)
   
@@ -256,8 +256,12 @@ bartBMA.default<-function(formula,
   bartBMA_call$nu<-nu
   bartBMA_call$lambda<-lambda
   
-  class(bartBMA_call)<-"bartBMA"
-  bartBMA_call
+  # Defining class
+  class(bartBMA_call) <- "bartBMA"
+  
+  return(bartBMA_call)
+  #---------------------------------------------------------------------
+  
 }
 
 #' A print function for the bartBMA method. 
@@ -281,6 +285,5 @@ print.bartBMA <- function(x, ...){
   cat(paste0("Number of Sum of Trees:\t\t  ", length(x$sumoftrees), "\n"))
   cat(paste0("Prediction error:\t\t  ", round(x$prediction.error, 3), "\n"))
   cat(paste0("Pseudo R-Squared:\t\t  ", 0, "\n"))
-  #print(x$sumoftrees)
 }
 
