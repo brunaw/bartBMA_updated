@@ -259,3 +259,28 @@ bartBMA.default<-function(formula,
   class(bartBMA_call)<-"bartBMA"
   bartBMA_call
 }
+
+#' A print function for the bartBMA method. 
+#' 
+#' 
+#' @title print.bartBMA
+#' @param x A bartBMA model
+
+print.bartBMA <- function(x, ...){
+  
+  x$prediction.error <- sqrt(sum((x$fitted.values  - x$response)^2))
+  
+  cat("bartBMA result \n \n")
+  cat("Call:\n")
+  print(x$call)
+  cat("\n")
+  cat(paste0("Type:\t\t\t\t  ", "Regression\n"))
+  cat(paste0("Sample Size:\t\t\t  ", x$nrowTrain, "\n"))
+  cat(paste0("Number of features:\t\t  ", x$numvars, "\n"))
+  cat(paste0("Prior parameters (sigma, a, nu):  ", "(", round(x$sigma, 2), ",", x$a,  ",", x$nu, ")", "\n"))
+  cat(paste0("Number of Sum of Trees:\t\t  ", length(x$sumoftrees), "\n"))
+  cat(paste0("Prediction error:\t\t  ", round(x$prediction.error, 3), "\n"))
+  cat(paste0("Pseudo R-Squared:\t\t  ", 0, "\n"))
+  #print(x$sumoftrees)
+}
+
