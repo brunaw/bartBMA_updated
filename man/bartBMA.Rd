@@ -5,47 +5,22 @@
 \alias{bartBMA.default}
 \title{Bayesian Additive Regression Trees Using Bayesian Model Averaging (BART-BMA)}
 \usage{
-bartBMA(x.train, ...)
+bartBMA(x, ...)
 
-\method{bartBMA}{default}(
-  x.train,
-  y.train,
-  a = 3,
-  nu = 3,
-  sigquant = 0.9,
-  c = 1000,
-  pen = 12,
-  num_cp = 20,
-  x.test = matrix(0, 0, 0),
-  num_rounds = 5,
-  alpha = 0.95,
-  beta = 2,
-  split_rule_node = 0,
-  gridpoint = 0,
-  maxOWsize = 100,
-  num_splits = 5,
-  gridsize = 10,
-  zero_split = 1,
-  only_max_num_trees = 1,
-  min_num_obs_for_split = 2,
-  min_num_obs_after_split = 2,
-  exact_residuals = 1,
-  spike_tree = 0,
-  s_t_hyperprior = 1,
-  p_s_t = 0.5,
-  a_s_t = 1,
-  b_s_t = 3,
-  lambda_poisson = 10,
-  less_greedy = 0,
-  ...
-)
+\method{bartBMA}{default}(formula, data, a = 3, nu = 3,
+  sigquant = 0.9, c = 1000, pen = 12, num_cp = 20,
+  x.test = matrix(0, 0, 0), num_rounds = 5, alpha = 0.95, beta = 2,
+  split_rule_node = FALSE, cp_method = "PELT", maxOWsize = 100,
+  num_splits = 5, gridsize = 10, zero_split = TRUE,
+  only_max_num_trees = 1, min_num_obs_for_split = 2,
+  min_num_obs_after_split = 2, exact_residuals = 1, spike_tree = 0,
+  s_t_hyperprior = 1, p_s_t = 0.5, a_s_t = 1, b_s_t = 3,
+  lambda_poisson = 10, less_greedy = 0, x = NULL, y = NULL, ...)
 }
 \arguments{
-\item{x.train}{Training data covariate matrix}
-
 \item{...}{Further arguments.}
 
-\item{y.train}{Training data outcome vector.}
+\item{data}{Training data of class, in a rectangular format (\code{data.frame}, \code{matrix}, etc).}
 
 \item{a}{This is a parameter that influences the variance of terminal node parameter values. Default value a=3.}
 
@@ -67,17 +42,18 @@ bartBMA(x.train, ...)
 
 \item{beta}{Parameter in prior probability of tree node splitting. Default beta=1}
 
-\item{split_rule_node}{Binary variable. If equals 1, then find a new set of potential splitting points via a changepoint algorithm after adding each split to a tree. If equals zero, use the same set of potential split points for all splits in a tree. Default split_rule_node=0.}
+\item{split_rule_node}{logical. If `TRUE`, then find a new set of potential splitting points via a changepoint algorithm after adding each split to a tree. If `FALSE`, use the same set of potential split points for all splits in a tree. Default split_rule_node= `TRUE`.}
 
-\item{gridpoint}{Binary variable. If equals 1, then a grid search changepoint detection algorithm will be used. If equals 0, then the Pruned Exact Linear Time (PELT) changepoint detection algorithm will be used (Killick et al. 2012). Default gridpoint=0.}
+\item{cp_method}{Sets the rule finding method as grid search
+("gridpoint") or the Pruned Exact Linear time ("PELT").}
 
 \item{maxOWsize}{Maximum number of models to keep in Occam's window. Default maxOWsize=100.}
 
 \item{num_splits}{Maximum number of splits in a tree}
 
-\item{gridsize}{This integer determines the size of the grid across which to search if gridpoint=1 when finding changepoints for constructing trees.}
+\item{gridsize}{This integer determines the size of the grid across which to search if cp_method = "gridpoint" when finding changepoints for constructing trees.}
 
-\item{zero_split}{Binary variable. If equals 1, then zero split trees can be included in a sum-of-trees model. If equals zero, then only trees with at least one split can be included in a sum-of-trees model.}
+\item{zero_split}{logical. If `TRUE`, then zero split trees can be included in a sum-of-trees model. If `FALSE`, then only trees with at least one split can be included in a sum-of-trees model.}
 
 \item{only_max_num_trees}{Binary variable. If equals 1, then only sum-of-trees models containing the maximum number of trees, num_rounds, are selected. If equals 0, then sum-of-trees models containing less than num_rounds trees can be selected. The default is only_max_num_trees=1.}
 
@@ -114,7 +90,7 @@ The following objects are returned by bartbma:
 \item{y_minmax}{Range of the input training data outcome vector.}
 \item{response}{Input taining data outcome vector.}
 \item{nrowTrain}{number of observations in the input training data.}
-\item{sigma}{sd(y.train)/(max(y.train)-min(y.train))}
+\item{sigma}{sd(y)/(max(y)-min(y))}
 \item{a}{input parameter}
 \item{nu}{input parameter}
 \item{lambda}{parameter determined by the inputs sigma, sigquant, and nu}
@@ -135,7 +111,7 @@ epsilontest <- rnorm(N)
 xcovtest <- matrix(runif(N*p), nrow=N)
 ytest <- sin(pi*xcovtest[,1]*xcovtest[,2]) + 20*(xcovtest[,3]-0.5)^2+10*xcovtest[,4]+
 5*xcovtest[,5]+epsilontest
-bart_bma_example <- bartBMA(x.train = xcov,y.train=y,x.test=xcovtest,zero_split = 1, 
+bart_bma_example <- bartBMA(x = xcov,y=y,x.test=xcovtest,zero_split = 1, 
 only_max_num_trees = 1,split_rule_node = 0)
 }
 \references{

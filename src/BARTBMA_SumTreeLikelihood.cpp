@@ -9661,8 +9661,10 @@ NumericVector preds_bbma_lin_alg_outsamp(List overall_sum_trees,
                                          List overall_sum_mat,
                                          NumericVector y,
                                          NumericVector BIC_weights,
-                                         int num_iter,int burnin,int num_obs,int num_test_obs,
-                                         double a,double sigma,double mu_mu,double nu,
+                                         int num_iter, int burnin,
+                                         int num_obs, int num_test_obs,
+                                         double a, double sigma, double mu_mu,
+                                         double nu,
                                          double lambda,//List resids,
                                          NumericMatrix test_data){
   

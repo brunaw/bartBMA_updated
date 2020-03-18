@@ -4,10 +4,10 @@
 \alias{predict_bartBMA}
 \title{Predictions for a new dataset using an existing bartbma object}
 \usage{
-predict_bartBMA(object, newdata)
+predict_bartBMA(x, newdata, ...)
 }
 \arguments{
-\item{object}{A bartBMA object obtained using the barBMA function.}
+\item{x}{A bartBMA object obtained using the barBMA function.}
 
 \item{newdata}{Covariate matrix for new dataset.}
 }
@@ -34,5 +34,5 @@ ytest <- sin(pi*xcovtest[,1]*xcovtest[,2]) + 20*(xcovtest[,3]-0.5)^2+10*xcovtest
 bart_bma_example <- bartBMA(x.train = xcov,y.train=y,x.test=xcovtest,zero_split = 1, 
                             only_max_num_trees = 1,split_rule_node = 0)
 #Obtain the prediction intervals
-predict_bartBMA(bart_bma_example,newdata=xcovtest)
+predict(bart_bma_example, newdata = xcovtest)
 }
