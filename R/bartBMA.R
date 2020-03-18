@@ -79,6 +79,7 @@ bartBMA <- function(x,...) UseMethod("bartBMA", x)
 #' @rdname bartBMA
 #' @export bartBMA.default
 #' @export
+#'
 bartBMA.default <- function(formula, 
                             data,
                             a = 3, nu = 3,
@@ -186,11 +187,6 @@ bartBMA.default <- function(formula,
   
   #if(is.vector(x.test) | is.factor(x.test)| is.data.frame(x.test)) x.test = as.matrix(x.test)
   
-  if(is.matrix(x)) {
-    if(nrow(x.test)>0) {
-      if(!is.matrix(x.test)) stop('x.test must be a matrix')
-    } 
-  }
   # check input arguments:
   # if((!is.matrix(x)) || (typeof(x)!="double")) stop("argument x must be a double matrix")
   # if((!is.matrix(x.test)) || (typeof(x.test)!="double")) stop("argument x.test must be a double matrix")
@@ -222,6 +218,17 @@ bartBMA.default <- function(formula,
   #---------------------------------------------------------------------
   # Calling main function
   
+  y_classes <- length(unique(y))
+  
+  if(y_classes == 2){
+    type <- "classification"
+  } else {
+    type <- "regression"
+  }
+  
+  if(type == "regression"){
+  # Regression
+  
   bartBMA_call = BART_BMA_sumLikelihood(
     less_greedy,
     spike_tree, 
@@ -234,28 +241,120 @@ bartBMA.default <- function(formula,
     gridpoint, maxOWsize, num_splits, gridsize, zero_split, only_max_num_trees,
     min_num_obs_for_split, min_num_obs_after_split, exact_residuals)
   
+  if(length(bartBMA_call) == 6){
+    #length of bartBMA_call is 6 if test data was included in the call
+    names(bartBMA_call) <- c("fitted.values","sumoftrees","obs_to_termNodesMatrix","bic","test.preds","sum_residuals")
+    bartBMA_call$test_data<-x.test
+  } else {
+    names(bartBMA_call) <- c("fitted.values","sumoftrees",
+                             "obs_to_termNodesMatrix","bic","sum_residuals")
+  }
+
+  additional_regression <- list(
+    numvars = ncol(x), 
+    call = match.call(), 
+    y_minmax = range(y),
+    response = y, 
+    nrowTrain = nrow(x),
+    sigma = sigma, 
+    a = a, nu = nu, lambda = lambda
+  )  
+
+  bartBMA_call <- c(bartBMA_call, additional_regression)
+  
+  } 
+  else if(type == "classification"){
+  
+  #---------------------------------------------------------------------
+  # Classification
+  
+  Zlatent <- ifelse(y == 1, 3.1, -3.1) # ?
+  binary = FALSE
+  start_mean = 0
+  start_sd = 1
+  mu = 0
+  sigma_mu = 0
+  sigma = sd(Zlatent)/(max(Zlatent) - min(Zlatent))
+  qchi = qchisq(1.0 - sigquant, nu, 1, 0)
+  lambda = (sigma* sigma* qchi)/nu
+  
+  if(is.factor(Zlatent)) {
+    binary = TRUE
+    #  Zlatent = as.numeric(Zlatent)-1
+    stop("Response must be a numeric vector")
+  } else {
+    if((length(unique(Zlatent)) == 2) & 
+       (max(Zlatent) == 1) & (min(Zlatent) == 0)) {
+      cat('NOTE: assumming numeric response is binary\n')
+      binary = TRUE
+    }
+  }
+
+  if(is.vector(x) | is.factor(x)| is.data.frame(x)) x = as.matrix(x)
+  if(is.vector(x.test) | is.factor(x.test)| is.data.frame(x.test)) x.test = as.matrix(x.test)
+  
+  if(is.matrix(x)) {
+    if(nrow(x.test)>0) {
+      if(!is.matrix(x.test)) stop('x.test must be a matrix')
+    } 
+  }
+  # check input arguments:
+  # if((!is.matrix(x)) || (typeof(x)!="double")) stop("argument x must be a double matrix")
+  # if((!is.matrix(x.test)) || (typeof(x.test)!="double")) stop("argument x.test must be a double matrix")
+  if((!is.matrix(x))) stop("argument x must be a double matrix")
+  if((!is.matrix(x.test)) ) stop("argument x.test must be a double matrix")
+  if(!binary) {
+    if((!is.vector(Zlatent))) stop("argument Zlatent must be a double vector")
+  }
+  if(nrow(x) != length(Zlatent)) stop("number of rows in x must equal length of Zlatent")
+  if((nrow(x.test) >0) && (ncol(x.test)!=ncol(x))) stop("input x.test must have the same number of columns as x")
+  #if((!is.na(sigest)) && (typeof(sigest)!="double")) stop("input sigest must be double")
+  #if((!is.na(sigest)) && (sigest<0.0)) stop("input sigest must be positive")
+  #if((mode(sigdf)!="numeric") || (sigdf<0)) stop("input sigdf must be a positive number")
+  if(c<1)stop("Value of Occam's Window has to be greater than 0."); 
+  if(num_cp<0 || num_cp>100)stop("Value of num_cp should be a value between 1 and 100."); 
+  
+  bartBMA_call = BART_BMA_sumLikelihood(
+    less_greedy,
+    spike_tree, s_t_hyperprior, 
+    p_s_t, a_s_t, b_s_t,
+    num_obs, num_vars, lambda_poisson,
+    x, Zlatent, start_mean,
+    start_sd, a, mu, nu, lambda, c, sigma_mu,
+    pen, num_cp, x.test, num_rounds, 
+    alpha, beta, split_rule_node,
+    gridpoint, maxOWsize,
+    num_splits, gridsize, zero_split,
+    only_max_num_trees, min_num_obs_for_split, 
+    min_num_obs_after_split, exact_residuals)
+  
   if(length(bartBMA_call)==6){
     #length of bartBMA_call is 6 if test data was included in the call
     names(bartBMA_call)<-c("fitted.values","sumoftrees","obs_to_termNodesMatrix","bic","test.preds","sum_residuals")
-    bartBMA_call[[6]]<-bartBMA_call[[6]]#[[length(bartBMA_call[[6]])]]
-    bartBMA_call$test_data<-x.test
+    bartBMA_call$test_data <- x.test
   }else{
-    names(bartBMA_call)<-c("fitted.values","sumoftrees","obs_to_termNodesMatrix","bic","sum_residuals")
-    bartBMA_call[[5]]<-bartBMA_call[[5]]#[[length(bartBMA_call[[5]])]]
+    names(bartBMA_call) <- c("fitted.values","sumoftrees",
+                             "obs_to_termNodesMatrix","bic","sum_residuals")
   }
   
-  bartBMA_call$numvars<-ncol(x)
-  bartBMA_call$call<-match.call()
-  bartBMA_call[[2]]<-bartBMA_call[[2]]#[[length(bartBMA_call[[2]])]]
-  bartBMA_call[[3]]<-bartBMA_call[[3]]#[[length(bartBMA_call[[3]])]]
-  bartBMA_call$y_minmax<-range(y)
-  bartBMA_call$response<-y
-  bartBMA_call$nrowTrain<-nrow(x)
-  bartBMA_call$sigma<-sigma
-  bartBMA_call$a<-a
-  bartBMA_call$nu<-nu
-  bartBMA_call$lambda<-lambda
+  additional_classification <- list(
+    numvars = ncol(x), 
+    call = match.call(), 
+    y_minmax = range(Zlatent),
+    response = Zlatent, 
+    nrowTrain = nrow(x),
+    sigma = sigma, 
+    a = a, nu = nu, lambda = lambda, 
+    fitted.probs = pnorm(bartBMA_call$fitted.values), 
+    fitted.classes = ifelse(bartBMA_call$fitted.probs <=0.5, 0, 1)
+  )  
   
+  bartBMA_call <- c(bartBMA_call, additional_classification)
+  
+  }
+  
+  #---------------------------------------------------------------------
+  bartBMA_call$type  <- type
   # Defining class
   class(bartBMA_call) <- "bartBMA"
   
@@ -269,6 +368,7 @@ bartBMA.default <- function(formula,
 #' 
 #' @title print.bartBMA
 #' @param x A bartBMA model
+#' @export 
 
 print.bartBMA <- function(x, ...){
   
