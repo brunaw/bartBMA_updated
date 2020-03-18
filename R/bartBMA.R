@@ -74,7 +74,7 @@
 #' only_max_num_trees = 1,split_rule_node = 0)
 
 
-bartBMA <- function(x,...) UseMethod("bartBMA")
+bartBMA <- function(x,...) UseMethod("bartBMA", x)
 
 #' @rdname bartBMA
 #' @export bartBMA.default
@@ -285,5 +285,6 @@ print.bartBMA <- function(x, ...){
   cat(paste0("Number of Sum of Trees:\t\t  ", length(x$sumoftrees), "\n"))
   cat(paste0("Prediction error:\t\t  ", round(x$prediction.error, 3), "\n"))
   cat(paste0("Pseudo R-Squared:\t\t  ", 0, "\n"))
+  invisible(x)
 }
 

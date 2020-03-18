@@ -24,7 +24,7 @@
 #' #Obtain the prediction intervals
 #' predict(bart_bma_example, newdata = xcovtest)
 
-predict_bartBMA <- function(x, newdata, ...){
+predict.bartBMA <- function(x, newdata, ...){
   #preds<-get_BART_BMA_test_predictions(newdata,object$bic,object$sumoftrees,object$y_minmax)
   #orig_preds<-preds[[1]]
   #class(orig_preds)<-"predict.bartBMA"
