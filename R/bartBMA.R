@@ -340,8 +340,8 @@ bartBMA.default <- function(formula,
   additional_classification <- list(
     numvars = ncol(x), 
     call = match.call(), 
-    y_minmax = range(Zlatent),
-    response = Zlatent, 
+    y_minmax = range(y),
+    response = y, 
     nrowTrain = nrow(x),
     sigma = sigma, 
     a = a, nu = nu, lambda = lambda, 
@@ -372,9 +372,17 @@ bartBMA.default <- function(formula,
 
 print.bartBMA <- function(x, ...){
   
+  if(x$type == "regression"){
   x$prediction.error <- sqrt(sum((x$fitted.values  - x$response)^2))
+  x$prediction.error <- round(x$prediction.error, 3)
+  }
+  else if(x$type == "classification"){
+    binary_prediction <- ifelse(x$fitted.probs <= 0.5, 0, 1)
+    x$prediction.error <- round(1 - sum(binary_prediction == x$response)/length(x$response), 3) 
+    x$prediction.error <- paste0(x$prediction.error * 100, "%")
+  }
   
-  cat("bartBMA result \n \n")
+  cat("bartBMA ", x$type, " result \n \n")
   cat("Call:\n")
   print(x$call)
   cat("\n")
@@ -383,7 +391,7 @@ print.bartBMA <- function(x, ...){
   cat(paste0("Number of features:\t\t  ", x$numvars, "\n"))
   cat(paste0("Prior parameters (sigma, a, nu):  ", "(", round(x$sigma, 2), ",", x$a,  ",", x$nu, ")", "\n"))
   cat(paste0("Number of Sum of Trees:\t\t  ", length(x$sumoftrees), "\n"))
-  cat(paste0("Prediction error:\t\t  ", round(x$prediction.error, 3), "\n"))
+  cat(paste0("Prediction error:\t\t  ", x$prediction.error, "\n"))
   cat(paste0("Pseudo R-Squared:\t\t  ", 0, "\n"))
   invisible(x)
 }
