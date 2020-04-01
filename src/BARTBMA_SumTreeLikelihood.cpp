@@ -1,17 +1,20 @@
-#include <RcppArmadilloExtensions/sample.h>
+//#include <RcppArmadilloExtensions/sample.h>
 // [[Rcpp::depends(RcppArmadillo)]]
 #define NDEBUG 1
-using namespace Rcpp ;
+#include "utils.h"
+using bartBMA::utils;
+
+// this is just a sampler
 // [[Rcpp::export]]
-IntegerVector csample_num( IntegerVector x,
-                           int size,
-                           bool replace,
-                           NumericVector prob = NumericVector::create()
-) {
-  RNGScope scope;
-  IntegerVector ret = RcppArmadillo::sample(x, size, replace, prob);
-  return ret;
-}
+//IntegerVector csample_num( IntegerVector x,
+//                           int size,
+//                           bool replace,
+//                           NumericVector prob = NumericVector::create()
+//) {
+//  RNGScope scope;
+//  IntegerVector ret = RcppArmadillo::sample(x, size, replace, prob);
+//  return ret;
+//}
 
 //######################################################################################################################//
 
@@ -19,6 +22,8 @@ IntegerVector csample_num( IntegerVector x,
 // [[Rcpp::depends(RcppArmadillo)]]
 #include <Rcpp.h>
 using namespace Rcpp;
+
+// not clear
 // [[Rcpp::export]]
 NumericMatrix add_rows(NumericMatrix prior_tree_table_temp,int grow_node){
   arma::mat M=Rcpp::as<arma::mat>(prior_tree_table_temp);
@@ -43,6 +48,7 @@ NumericMatrix add_rows(NumericMatrix prior_tree_table_temp,int grow_node){
 
 //######################################################################################################################//
 
+// not clear
 // [[Rcpp::depends(RcppArmadillo)]]
 // [[Rcpp::export]]
 NumericMatrix addcol(NumericMatrix prior_tree_matrix_temp,int grow_node,NumericVector ld_obs,NumericVector rd_obs){
@@ -50,23 +56,10 @@ NumericMatrix addcol(NumericMatrix prior_tree_matrix_temp,int grow_node,NumericV
   arma::mat M=Rcpp::as<arma::mat>(prior_tree_matrix_temp);
   M.insert_cols(ncol,1);
   for(int i =0;i<ld_obs.size();i++){
-    // try{
-    //   if(ld_obs[i]>prior_tree_matrix_temp.nrow()){
-    //     throw std::range_error("can't add col because ld row index is out of range");
-    //   }
-    // }catch(...){
-    //   ::Rf_error("there is a problem adding col to mat don't know why");
-    // }
+    
     M(ld_obs[i],ncol)=grow_node+1;
   }
   for(int i =0;i<rd_obs.size();i++){
-    // try{
-    //   if(rd_obs[i]>prior_tree_matrix_temp.nrow()){
-    //     throw std::range_error("can't add col because rd row index is out of range");
-    //   }
-    // }catch(...){
-    //   ::Rf_error("there is a problem adding rd col to mat");
-    // }    
     M(rd_obs[i],ncol)=grow_node+2;
   }
   return(wrap(M));
@@ -77,7 +70,9 @@ NumericMatrix addcol(NumericMatrix prior_tree_matrix_temp,int grow_node,NumericV
 // [[Rcpp::depends(RcppArmadillo)]]
 // [[Rcpp::export]]
 
-NumericMatrix set_daughter_to_end_tree(int grow_node,NumericMatrix prior_tree_table_temp,double left_daughter){
+NumericMatrix set_daughter_to_end_tree(int grow_node,
+                                       NumericMatrix prior_tree_table_temp,
+                                       double left_daughter){
   int nrow=prior_tree_table_temp.nrow();
   arma::mat M=Rcpp::as<arma::mat>(prior_tree_table_temp);
   // Rcout << "Line 82";
