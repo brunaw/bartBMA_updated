@@ -8,24 +8,6 @@ using bartBMA::utils;
 
 // [[Rcpp::depends(RcppArmadillo)]]
 // [[Rcpp::export]]
-NumericMatrix addcol(NumericMatrix prior_tree_matrix_temp,int grow_node,NumericVector ld_obs,NumericVector rd_obs){
-  int ncol=prior_tree_matrix_temp.ncol();
-  arma::mat M=Rcpp::as<arma::mat>(prior_tree_matrix_temp);
-  M.insert_cols(ncol,1);
-  for(int i =0;i<ld_obs.size();i++){
-    
-    M(ld_obs[i],ncol)=grow_node+1;
-  }
-  for(int i =0;i<rd_obs.size();i++){
-    M(rd_obs[i],ncol)=grow_node+2;
-  }
-  return(wrap(M));
-} 
-
-//######################################################################################################################//
-
-// [[Rcpp::depends(RcppArmadillo)]]
-// [[Rcpp::export]]
 
 NumericMatrix set_daughter_to_end_tree(int grow_node,
                                        NumericMatrix prior_tree_table_temp,
@@ -494,7 +476,7 @@ List grow_tree(arma::mat& xmat,//NumericVector y,
     // Rcout << "Line 513";
     
     prior_tree_table_temp = obj.add_rows(prior_tree_table_temp,grow_node);
-    prior_tree_matrix_temp = addcol(prior_tree_matrix_temp,grow_node,ld_obs,rd_obs);  
+    prior_tree_matrix_temp = obj.addcol(prior_tree_matrix_temp,grow_node,ld_obs,rd_obs);  
   }else{
     
     //if grow node is in the middle of the tree
@@ -526,19 +508,19 @@ List grow_tree(arma::mat& xmat,//NumericVector y,
         
         prior_tree_matrix_temp=update_grow_obs(prior_tree_matrix_temp,grow_node,left_daughter,d+1,ld_obs,rd_obs);
       }else{
-
+        
         //if the daughter node number already exists in the tree and existing node numbers have to be updated
         //daughter nodes need to be added to the end of the table not in the center of it
         prior_tree_table_temp=set_daughter_to_end_tree(grow_node,prior_tree_table_temp,left_daughter);
-
+        
         
         prior_tree_matrix_temp=set_daughter_to_end_mat(d,prior_tree_matrix_temp,left_daughter,ld_obs,rd_obs);
       }
     }else{
-
+      
       //if the daughter node number already exists in the tree and existing node numbers have to be updated
       prior_tree_table_temp=set_tree_to_middle(wrap(arma::conv_to<arma::vec>::from(node_to_update)),prior_tree_table_temp,grow_node,left_daughter);
-
+      
       prior_tree_matrix_temp=find_obs_to_update_grow(prior_tree_matrix_temp,left_daughter,d,ld_obs,rd_obs);    
     }
   }
@@ -10755,13 +10737,13 @@ Rcpp::NumericVector Quantile(Rcpp::NumericVector x, Rcpp::NumericVector probs) {
     else if(_name.substr(7)==zero.substr(5)) _name=_name.substr(0, 7);
     else if(_name.substr(8)==zero.substr(6)) _name=_name.substr(0, 8);
     /*  // why does this not work?
-    else {
-    for(size_t j=3; j<8; ++j) {
-    if(_name.substr(j)==zero.substr(j-1)) _name=_name.substr(0, j);
-    else if(_name.substr(j+1)==zero.substr(j-1)) _name=_name.substr(0, j+1);
-    }
-    }
-    */
+     else {
+     for(size_t j=3; j<8; ++j) {
+     if(_name.substr(j)==zero.substr(j-1)) _name=_name.substr(0, j);
+     else if(_name.substr(j+1)==zero.substr(j-1)) _name=_name.substr(0, j+1);
+     }
+     }
+     */
     qs_names[i] = _name + std::string("%");
     qs[i] = y[lo[i]];
     x_hi[i] = y[hi[i]];
@@ -10774,7 +10756,7 @@ Rcpp::NumericVector Quantile(Rcpp::NumericVector x, Rcpp::NumericVector probs) {
   
   qs.names()=qs_names;
   return qs;
-  }
+}
 
 
 //###########################################################################################################################//

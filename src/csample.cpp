@@ -3,9 +3,7 @@
 using namespace Rcpp;
 #include "utils.h"
 #include <RcppArmadilloExtensions/sample.h>
-
 namespace bartBMA { 
-
 IntegerVector utils::csample_num( 
     IntegerVector x,
     int size,
@@ -37,8 +35,36 @@ NumericMatrix utils::add_rows(
   t.attr("dimnames") = dimnms;
   return(t);
 }
-}
 
+NumericMatrix utils::addcol(
+    NumericMatrix prior_tree_matrix_temp, int grow_node,
+    NumericVector ld_obs, NumericVector rd_obs){
+  
+  int ncol = prior_tree_matrix_temp.ncol();
+  arma::mat M = Rcpp::as<arma::mat>(prior_tree_matrix_temp);
+  
+  M.insert_cols(ncol, 1);
+  for(int i = 0; i < ld_obs.size(); i++){
+    M(ld_obs[i], ncol) = grow_node + 1;
+  }
+  for(int i = 0; i < rd_obs.size(); i++ ){
+    M(rd_obs[i], ncol) = grow_node + 2;
+  }
+  return(wrap(M));
+} 
+}
+// [[Rcpp::export]]
+NumericMatrix addcol(
+    NumericMatrix prior_tree_matrix_temp, int grow_node,
+    NumericVector ld_obs, NumericVector rd_obs){
+  
+  bartBMA::utils obj2;
+  
+  NumericMatrix result = obj2.addcol(
+    prior_tree_matrix_temp, 
+    grow_node, ld_obs, rd_obs);
+  return result; 
+}
 // [[Rcpp::export]]
 NumericMatrix add_rows(
     NumericMatrix prior_tree_table_temp,
@@ -49,8 +75,6 @@ NumericMatrix add_rows(
   NumericMatrix result = obj.add_rows(prior_tree_table_temp, grow_node);
   return result; 
 }
-//######################################################################################################################//
-// Write a wrapper to the namespace'd function that will be elevated into R
 // [[Rcpp::export]]
 IntegerVector csample_num( 
     IntegerVector x,
@@ -63,5 +87,3 @@ IntegerVector csample_num(
   IntegerVector result = obj.csample_num(x, size, replace, prob);
   return result; 
 }
-
-

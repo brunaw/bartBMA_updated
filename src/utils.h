@@ -14,6 +14,12 @@ public:
       Rcpp::NumericMatrix prior_tree_table_temp,
       int grow_node
   );
+  Rcpp::NumericMatrix addcol(
+      Rcpp::NumericMatrix prior_tree_matrix_temp, 
+      int grow_node,
+      Rcpp::NumericVector ld_obs, 
+      Rcpp::NumericVector rd_obs
+    );
   
 private:  
 };
