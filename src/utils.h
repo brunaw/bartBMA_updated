@@ -10,6 +10,11 @@ public:
       bool replace, 
       Rcpp::NumericVector prob
   );
+  Rcpp::NumericMatrix add_rows(
+      Rcpp::NumericMatrix prior_tree_table_temp,
+      int grow_node
+  );
+  
 private:  
 };
 }

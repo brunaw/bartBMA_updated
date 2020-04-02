@@ -1,54 +1,11 @@
 //#include <RcppArmadilloExtensions/sample.h>
 // [[Rcpp::depends(RcppArmadillo)]]
+#include <RcppArmadillo.h>
+using namespace Rcpp;
 #define NDEBUG 1
 #include "utils.h"
 using bartBMA::utils;
 
-// this is just a sampler
-// [[Rcpp::export]]
-//IntegerVector csample_num( IntegerVector x,
-//                           int size,
-//                           bool replace,
-//                           NumericVector prob = NumericVector::create()
-//) {
-//  RNGScope scope;
-//  IntegerVector ret = RcppArmadillo::sample(x, size, replace, prob);
-//  return ret;
-//}
-
-//######################################################################################################################//
-
-#include <RcppArmadillo.h>
-// [[Rcpp::depends(RcppArmadillo)]]
-#include <Rcpp.h>
-using namespace Rcpp;
-
-// not clear
-// [[Rcpp::export]]
-NumericMatrix add_rows(NumericMatrix prior_tree_table_temp,int grow_node){
-  arma::mat M=Rcpp::as<arma::mat>(prior_tree_table_temp);
-  M(grow_node-1,5)=0;
-  M(grow_node-1,6)=0;
-  M(grow_node-1,0)=grow_node+1;
-  M(grow_node-1,1)=grow_node+2;
-  M.insert_rows(grow_node,2);
-  M(grow_node,4)=-1;
-  M(grow_node+1,4)=-1;
-  NumericMatrix t=as<NumericMatrix>(wrap(M));
-  IntegerVector rname=seq_len(t.nrow());
-  
-  List dimnms = // two vec. with static names
-    List::create(rname,
-                 CharacterVector::create("left daughter","right daughter","split var","split point","status","mean","std dev"));
-  // and assign it
-  t.attr("dimnames") = dimnms;
-  
-  return(t);
-}
-
-//######################################################################################################################//
-
-// not clear
 // [[Rcpp::depends(RcppArmadillo)]]
 // [[Rcpp::export]]
 NumericMatrix addcol(NumericMatrix prior_tree_matrix_temp,int grow_node,NumericVector ld_obs,NumericVector rd_obs){
@@ -500,7 +457,6 @@ NumericVector get_grow_obs(arma::mat& xmat,NumericVector grow_obs,int split_var)
 
 // [[Rcpp::depends(RcppArmadillo)]]
 // [[Rcpp::export]]
-
 List grow_tree(arma::mat& xmat,//NumericVector y,
                NumericMatrix prior_tree_matrix,int grow_node,NumericMatrix prior_tree_table,int splitvar,
                double splitpoint,//NumericVector terminal_nodes,
@@ -508,6 +464,8 @@ List grow_tree(arma::mat& xmat,//NumericVector y,
                int d//,NumericVector get_min,arma::mat& data_curr_node
 )
 {
+  
+  bartBMA::utils obj;
   // Rcout << "Line 489.\n";
   
   NumericMatrix prior_tree_matrix_temp=clone(prior_tree_matrix);
@@ -535,10 +493,9 @@ List grow_tree(arma::mat& xmat,//NumericVector y,
   if(prior_tree_table_temp.nrow()==grow_node){
     // Rcout << "Line 513";
     
-    prior_tree_table_temp=add_rows(prior_tree_table_temp,grow_node);
-    prior_tree_matrix_temp=addcol(prior_tree_matrix_temp,grow_node,ld_obs,rd_obs);  
+    prior_tree_table_temp = obj.add_rows(prior_tree_table_temp,grow_node);
+    prior_tree_matrix_temp = addcol(prior_tree_matrix_temp,grow_node,ld_obs,rd_obs);  
   }else{
-    // Rcout << "Line 518.\n";
     
     //if grow node is in the middle of the tree
     NumericVector nodes_d;
@@ -562,36 +519,30 @@ List grow_tree(arma::mat& xmat,//NumericVector y,
     //increase the node number of nodes after the grow node by two (because 2 daughter nodes are now appended to grow node)
     //do this for all observations except those that already belong to a terminal node (a value of 0)
     
-    // Rcout << "Line 542.\n";
-    // Rcout << "node_to_update= " << node_to_update << ".\n";
-    
     if(node_to_update.size()==0){
       if(prior_tree_matrix_temp.ncol()>d+1){
-        // Rcout << "Line 559.\n";
         
         prior_tree_table_temp=set_daughter_to_end_tree(grow_node,prior_tree_table_temp,left_daughter);
-        // Rcout << "Line 562.\n";
         
         prior_tree_matrix_temp=update_grow_obs(prior_tree_matrix_temp,grow_node,left_daughter,d+1,ld_obs,rd_obs);
       }else{
-        // Rcout << "Line 552.\n";
+
         //if the daughter node number already exists in the tree and existing node numbers have to be updated
         //daughter nodes need to be added to the end of the table not in the center of it
         prior_tree_table_temp=set_daughter_to_end_tree(grow_node,prior_tree_table_temp,left_daughter);
-        // Rcout << "Line 568.\n";
+
         
         prior_tree_matrix_temp=set_daughter_to_end_mat(d,prior_tree_matrix_temp,left_daughter,ld_obs,rd_obs);
       }
     }else{
-      // Rcout << "Line 559.\n";
+
       //if the daughter node number already exists in the tree and existing node numbers have to be updated
       prior_tree_table_temp=set_tree_to_middle(wrap(arma::conv_to<arma::vec>::from(node_to_update)),prior_tree_table_temp,grow_node,left_daughter);
-      // Rcout << "Line 562.\n";
+
       prior_tree_matrix_temp=find_obs_to_update_grow(prior_tree_matrix_temp,left_daughter,d,ld_obs,rd_obs);    
     }
   }
   
-  // Rcout << "Line 546.\n";
   
   List ret(2);
   ret[0]=prior_tree_table_temp;
@@ -700,11 +651,8 @@ double get_tree_prior(double spike_tree, int s_t_hyperprior, double p_s_t, doubl
     arma::uvec internal_nodes_prop=find_internal_nodes(tree_table);
     arma::mat tree_table2(tree_table.begin(),tree_table.nrow(),tree_table.ncol(),false);
     
-    //Rcout << "line 600.internal_nodes_prop = " << internal_nodes_prop <<".\n";
     
     double k_temp=internal_nodes_prop.size()+1;
-    
-    //Rcout << "line 600.k_temp = " << k_temp <<".\n";
     
     arma::mat split_var_rows=tree_table2.rows(internal_nodes_prop-1);
     arma::vec split_var_vec=split_var_rows.col(2);
