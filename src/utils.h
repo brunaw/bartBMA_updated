@@ -33,7 +33,8 @@ public:
       Rcpp::NumericVector rd_obs
     );
   Rcpp::NumericVector remove_zero(NumericVector nodes_at_depth);
-    
+  Rcpp::NumericVector find_term_nodes(NumericMatrix tree_table);
+  
 private:  
 };
 }

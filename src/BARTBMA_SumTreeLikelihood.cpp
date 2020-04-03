@@ -6,6 +6,27 @@ using namespace Rcpp;
 #include "utils.h"
 using bartBMA::utils;
 
+//###########################################################################################################################//
+// [[Rcpp::depends(RcppArmadillo)]]
+// [[Rcpp::export]]
+NumericVector mu_vector(List sum_treetable,int n){
+  NumericVector mu_vec;
+  
+  bartBMA::utils utils; 
+  
+  for(int j=0;j<sum_treetable.size();j++){    
+    NumericMatrix curr_tree=sum_treetable[j];
+    NumericVector tree_term_nodes=utils.find_term_nodes(curr_tree);
+    NumericVector term_means1=curr_tree(_,5);
+    NumericVector term_means=utils.remove_zero(term_means1);
+    
+    for(int i=0;i<term_means.size();i++){
+      mu_vec.push_back(term_means[i]);  
+    }
+  }
+  return(mu_vec);
+}
+
 //######################################################################################################################//
 
 // [[Rcpp::export]]
@@ -26,19 +47,6 @@ NumericVector get_gnp(NumericVector nodes_at_depth,int grow_node){
   return(wrap(arma::conv_to<arma::vec>::from(grow_node_pos)));  
 }
 
-//######################################################################################################################//
-
-// [[Rcpp::depends(RcppArmadillo)]]
-// [[Rcpp::export]]
-
-NumericVector find_term_nodes(NumericMatrix tree_table){
-  arma::mat arma_tree(tree_table.begin(),tree_table.nrow(), tree_table.ncol(), false); 
-  arma::vec colmat=arma_tree.col(4);
-  arma::uvec term_nodes=arma::find(colmat==-1);
-  term_nodes=term_nodes+1;
-  
-  return(wrap(arma::conv_to<arma::vec>::from(term_nodes)));
-} 
 
 //######################################################################################################################//
 
@@ -65,8 +73,9 @@ arma::uvec find_term_obs(NumericMatrix tree_matrix_temp,double terminal_node){
 // [[Rcpp::export]]
 
 double likelihood_function(NumericVector y_temp,NumericMatrix treetable_temp,NumericMatrix obs_to_nodes_temp,double a,double mu,double nu,double lambda){
+  bartBMA::utils utils; 
   double tree_log_lik;
-  NumericVector terminal_nodes=find_term_nodes(treetable_temp);
+  NumericVector terminal_nodes = utils.find_term_nodes(treetable_temp);
   double b=terminal_nodes.size();
   IntegerVector n(b);
   double term1=0;
@@ -931,9 +940,10 @@ NumericVector get_testdata_term_obs(NumericMatrix test_data,NumericMatrix tree_d
   //Function to make predictions from test data, given a single tree and the terminal node predictions, this function will be called
   //for each tree accepted in Occam's Window.
   
+  bartBMA::utils utils; 
   arma::mat arma_tree(tree_data.begin(), tree_data.nrow(), tree_data.ncol(), false);
   arma::mat testd(test_data.begin(), test_data.nrow(), test_data.ncol(), false);
-  NumericVector terminal_nodes=find_term_nodes(tree_data);
+  NumericVector terminal_nodes = utils.find_term_nodes(tree_data);
   //arma::vec arma_terminal_nodes=Rcpp::as<arma::vec>(terminal_nodes);
   //NumericVector tree_predictions;
   //for each internal node find the observations that belong to the terminal nodes
@@ -1029,6 +1039,8 @@ List get_initial_resids(NumericMatrix test_data,List List_of_lists_tree_tables,N
   //Function to make predictions from test data, given a single tree and the terminal node predictions, this function will be called
   //for each tree accepted in Occam's Window.
   
+  bartBMA::utils utils; 
+  
   List List_of_resid_lists(List_of_lists_tree_tables.size());
   List new_pred_list(List_of_lists_tree_tables.size());
   
@@ -1051,7 +1063,7 @@ List get_initial_resids(NumericMatrix test_data,List List_of_lists_tree_tables,N
       
       arma::mat arma_tree(tree_data.begin(), tree_data.nrow(), tree_data.ncol(), false);
       arma::mat testd(test_data.begin(), test_data.nrow(), test_data.ncol(), false);
-      NumericVector terminal_nodes=find_term_nodes(tree_data);
+      NumericVector terminal_nodes=utils.find_term_nodes(tree_data);
       //arma::vec arma_terminal_nodes=Rcpp::as<arma::vec>(terminal_nodes);
       //NumericVector tree_predictions;
       //for each internal node find the observations that belong to the terminal nodes
@@ -1226,31 +1238,12 @@ arma::mat J(NumericMatrix obs_to_nodes_temp,NumericVector tree_term_nodes){
 //###########################################################################################################################//
 // [[Rcpp::depends(RcppArmadillo)]]
 // [[Rcpp::export]]
-NumericVector mu_vector(List sum_treetable,int n){
-  NumericVector mu_vec;
-  
-  bartBMA::utils utils; 
-  
-  for(int j=0;j<sum_treetable.size();j++){    
-    NumericMatrix curr_tree=sum_treetable[j];
-    NumericVector tree_term_nodes=find_term_nodes(curr_tree);
-    NumericVector term_means1=curr_tree(_,5);
-    NumericVector term_means=utils.remove_zero(term_means1);
-    
-    for(int i=0;i<term_means.size();i++){
-      mu_vec.push_back(term_means[i]);  
-    }
-  }
-  return(mu_vec);
-}
-//###########################################################################################################################//
-// [[Rcpp::depends(RcppArmadillo)]]
-// [[Rcpp::export]]
 
 arma::mat W(List sum_treetable ,List sum_obs_to_nodes,int n){
   //this will take in a list of obs to node matrices for each tree in the sum make the J matrix assigning observations to terminal nodes
   //J is an nxb_j matrix. It will then iteratively append the J matrix to itself to get the overall W matrix which has dimensions nxsumb_j
   
+  bartBMA::utils utils;
   //create empty matrix to which we will append individual J matrices
   arma::mat W(n,0);
   int upsilon=0;
@@ -1259,7 +1252,7 @@ arma::mat W(List sum_treetable ,List sum_obs_to_nodes,int n){
     NumericMatrix curr_tree=sum_treetable[j];
     NumericMatrix curr_obs_nodes=sum_obs_to_nodes[j];
     //Rcout << "Line 1288.\n"; 
-    NumericVector tree_term_nodes=find_term_nodes(curr_tree);
+    NumericVector tree_term_nodes=utils.find_term_nodes(curr_tree);
     //Rcout << "Line 1290.\n"; 
     
     int b_j=tree_term_nodes.size();
@@ -1346,8 +1339,9 @@ arma::mat W(List sum_treetable ,List sum_obs_to_nodes,int n){
 // [[Rcpp::export]]
 double likelihood_function2(NumericVector y_temp,NumericMatrix treetable_temp,NumericMatrix obs_to_nodes_temp,double a,double mu,double nu,double lambda){
   
+  bartBMA::utils utils; 
   int n=y_temp.size();
-  NumericVector tree_term_nodes=find_term_nodes(treetable_temp);
+  NumericVector tree_term_nodes = utils.find_term_nodes(treetable_temp);
   //int b_j=tree_term_nodes.size();
   //will make J as we go in BART-BMA no need to create it again here....
   arma::mat Wmat=J(obs_to_nodes_temp,tree_term_nodes);
@@ -1396,11 +1390,11 @@ List likelihood_function2_exact(NumericVector y_temp,NumericMatrix treetable_tem
   //double likelihood_function2(NumericVector y_temp,NumericMatrix treetable_temp,NumericMatrix obs_to_nodes_temp,double a,double mu,double nu,double lambda){
   
   // Rcout << "Line 1420.\n";
-  
+  bartBMA::utils utils; 
   int n=y_temp.size();
   // Rcout << "Line 1328.\n";
   // Rcout << "treetable_temp.ncol() = " << treetable_temp.ncol() << ".\n";
-  NumericVector tree_term_nodes=find_term_nodes(treetable_temp);
+  NumericVector tree_term_nodes=utils.find_term_nodes(treetable_temp);
   // Rcout << "Line 1426.\n";
   
   //int b_j=tree_term_nodes.size();
@@ -1752,11 +1746,12 @@ List get_best_split(double less_greedy, double spike_tree, int s_t_hyperprior, d
                       unsigned int min_num_obs_for_split, unsigned int min_num_obs_after_split//,int first_round
 ){
   //this function will search through all predictive split points and return those within Occam's Window.
+  bartBMA::utils utils; 
   int split_var;
   NumericMatrix treetable_c=treetable;
   NumericMatrix treemat_c=tree_mat;
   
-  NumericVector terminal_nodes=find_term_nodes(treetable_c);
+  NumericVector terminal_nodes=utils.find_term_nodes(treetable_c);
   //IntegerVector change_node1;
   int list_size=1000;
   std::vector<double> tree_lik(list_size);
@@ -1975,11 +1970,12 @@ List get_best_split_2(double less_greedy, double spike_tree, int s_t_hyperprior,
                         ,List cp_matlist,double alpha,double beta,int maxOWsize, unsigned int min_num_obs_for_split, unsigned int min_num_obs_after_split//,int first_round
 ){
   //this function will search through all predictive split points and return those within Occam's Window.
+  bartBMA::utils utils; 
   int split_var;
   NumericMatrix treetable_c=treetable;
   NumericMatrix treemat_c=tree_mat;
   
-  NumericVector terminal_nodes=find_term_nodes(treetable_c);
+  NumericVector terminal_nodes= utils.find_term_nodes(treetable_c);
   //IntegerVector change_node1;
   int list_size=1000;
   std::vector<double> tree_lik(list_size);
@@ -2195,11 +2191,12 @@ List get_best_split_sum(double less_greedy, double spike_tree, int s_t_hyperprio
                         List sum_trees,List sum_trees_mat,NumericVector y_scaled,IntegerVector parent2,int i,
                         unsigned int min_num_obs_for_split,unsigned int min_num_obs_after_split){
   //this function will search through all predictive split points and return those within Occam's Window.
+  bartBMA::utils utils; 
   int split_var;
   NumericMatrix treetable_c=treetable;
   NumericMatrix treemat_c=tree_mat;
   
-  NumericVector terminal_nodes=find_term_nodes(treetable_c);
+  NumericVector terminal_nodes= utils.find_term_nodes(treetable_c);
   //IntegerVector change_node1;
   int list_size=1000;
   std::vector<double> tree_lik(list_size);
@@ -2453,11 +2450,12 @@ List get_best_split_sum_2(double less_greedy, double spike_tree, int s_t_hyperpr
                           List sum_trees,List sum_trees_mat,NumericVector y_scaled,IntegerVector parent2,int i,
                           unsigned int min_num_obs_for_split,unsigned int min_num_obs_after_split){
   //this function will search through all predictive split points and return those within Occam's Window.
+  bartBMA::utils utils; 
   int split_var;
   NumericMatrix treetable_c=treetable;
   NumericMatrix treemat_c=tree_mat;
   
-  NumericVector terminal_nodes=find_term_nodes(treetable_c);
+  NumericVector terminal_nodes=utils.find_term_nodes(treetable_c);
   //IntegerVector change_node1;
   int list_size=1000;
   std::vector<double> tree_lik(list_size);
@@ -2713,12 +2711,12 @@ List get_best_split_exact(double less_greedy, double spike_tree, int s_t_hyperpr
   //this function will search through all predictive split points and return those within Occam's Window.
   
   // Rcout << "Line 2733 .\n";
-  
+  bartBMA::utils utils; 
   int split_var;
   NumericMatrix treetable_c=treetable;
   NumericMatrix treemat_c=tree_mat;
   
-  NumericVector terminal_nodes=find_term_nodes(treetable_c);
+  NumericVector terminal_nodes= utils.find_term_nodes(treetable_c);
   //IntegerVector change_node1;
   int list_size=1000;
   std::vector<double> tree_lik(list_size);
@@ -3011,11 +3009,12 @@ List get_best_split_2_exact(double less_greedy, double spike_tree, int s_t_hyper
                               ,List cp_matlist,double alpha,double beta,int maxOWsize, unsigned int min_num_obs_for_split, unsigned int min_num_obs_after_split//,int first_round
 ){
   //this function will search through all predictive split points and return those within Occam's Window.
+  bartBMA::utils utils; 
   int split_var;
   NumericMatrix treetable_c=treetable;
   NumericMatrix treemat_c=tree_mat;
   
-  NumericVector terminal_nodes=find_term_nodes(treetable_c);
+  NumericVector terminal_nodes= utils.find_term_nodes(treetable_c);
   //IntegerVector change_node1;
   int list_size=1000;
   std::vector<double> tree_lik(list_size);
@@ -3274,13 +3273,13 @@ List get_best_split_sum_exact(double less_greedy, double spike_tree, int s_t_hyp
   //this function will search through all predictive split points and return those within Occam's Window.
   
   // Rcout << " line 3296. no update .\n";
-  
+  bartBMA::utils utils; 
   int split_var;
   NumericMatrix treetable_c=treetable;
   NumericMatrix treemat_c=tree_mat;
   //Rcout << " line 3223. no update .\n";
   
-  NumericVector terminal_nodes=find_term_nodes(treetable_c);
+  NumericVector terminal_nodes= utils.find_term_nodes(treetable_c);
   //IntegerVector change_node1;
   int list_size=1000;
   std::vector<double> tree_lik(list_size);
@@ -3596,12 +3595,12 @@ List get_best_split_sum_2_exact(double less_greedy, double spike_tree, int s_t_h
   
   // Rcout << "Line 3603. \n";
   
-  
+  bartBMA::utils utils; 
   int split_var;
   NumericMatrix treetable_c=treetable;
   NumericMatrix treemat_c=tree_mat;
   
-  NumericVector terminal_nodes=find_term_nodes(treetable_c);
+  NumericVector terminal_nodes= utils.find_term_nodes(treetable_c);
   //IntegerVector change_node1;
   int list_size=1000;
   std::vector<double> tree_lik(list_size);
@@ -3912,9 +3911,10 @@ List get_best_split_sum_2_exact(double less_greedy, double spike_tree, int s_t_h
 NumericVector update_mean_var(NumericMatrix tree_table,NumericMatrix tree_matrix,NumericVector resids,double a){
   //// Rcout << "Get to start of update_mean_var. \n";
   //List update_params(1);
+  bartBMA::utils utils; 
   NumericVector terminal_nodes;
   arma::uvec term_obs;
-  terminal_nodes= find_term_nodes(tree_table);
+  terminal_nodes= utils.find_term_nodes(tree_table);
   NumericVector Tj(terminal_nodes.size());
   NumericVector new_mean(terminal_nodes.size());
   //arma::vec armaresids=as<arma::vec>(resids);
@@ -3940,11 +3940,12 @@ NumericVector update_mean_var(NumericMatrix tree_table,NumericMatrix tree_matrix
 // [[Rcpp::export]]
 List update_predictions(NumericMatrix tree_table,NumericMatrix tree_matrix,NumericVector new_mean,int n){
   
+  bartBMA::utils utils; 
   List updated_preds(2);
   NumericVector new_preds(n);
   NumericVector terminal_nodes;
   arma::uvec term_obs;
-  terminal_nodes=find_term_nodes(tree_table);
+  terminal_nodes= utils.find_term_nodes(tree_table);
   
   for(int k=0;k<terminal_nodes.size();k++){
     term_obs=find_term_obs(tree_matrix,terminal_nodes[k]);        
@@ -4515,6 +4516,8 @@ List get_best_trees(double less_greedy, double spike_tree, int s_t_hyperprior, d
                     NumericMatrix test_data,double alpha,double beta,bool is_test_data,double pen,int num_cp,bool split_rule_node,bool gridpoint,int maxOWsize,int num_splits,int gridsize, bool zero_split,
                     unsigned int min_num_obs_for_split, unsigned int min_num_obs_after_split
 ){
+  
+  bartBMA::utils utils; 
   List eval_model;
   NumericVector lik_list;
   List best_subset;
@@ -4769,7 +4772,7 @@ List get_best_trees(double less_greedy, double spike_tree, int s_t_hyperprior, d
           new_mean=update_mean_var(table_subset_curr_round[k],mat_subset_curr_round[k],resids(_,parent_curr_round[k]),a);
         }  
         //Rcout << "Line 2533. j = " << j << ". \n";
-        terminal_nodes=find_term_nodes(table_subset_curr_round[k]);
+        terminal_nodes= utils.find_term_nodes(table_subset_curr_round[k]);
         updated_curr_preds=update_predictions(table_subset_curr_round[k],mat_subset_curr_round[k],new_mean,D1.n_rows);
         NumericVector test_res;
         
@@ -4920,6 +4923,7 @@ List get_best_trees_update_splits(double less_greedy, double spike_tree, int s_t
                                   NumericMatrix test_data,double alpha,double beta,bool is_test_data,double pen,int num_cp,bool split_rule_node,bool gridpoint,int maxOWsize,int num_splits,int gridsize, bool zero_split,
                                   unsigned int min_num_obs_for_split, unsigned int min_num_obs_after_split
 ){
+  bartBMA::utils utils; 
   List eval_model;
   NumericVector lik_list;
   List best_subset;
@@ -5177,7 +5181,7 @@ List get_best_trees_update_splits(double less_greedy, double spike_tree, int s_t
           new_mean=update_mean_var(table_subset_curr_round[k],mat_subset_curr_round[k],resids(_,parent_curr_round[k]),a);
         }  
         //Rcout << "Line 2533. j = " << j << ". \n";
-        NumericVector terminal_nodes=find_term_nodes(table_subset_curr_round[k]);
+        NumericVector terminal_nodes=utils.find_term_nodes(table_subset_curr_round[k]);
         updated_curr_preds=update_predictions(table_subset_curr_round[k],mat_subset_curr_round[k],new_mean,D1.n_rows);
         NumericVector test_res;
         
@@ -5949,7 +5953,7 @@ List get_best_trees_sum_update_splits(double less_greedy, double spike_tree, int
                                       unsigned int min_num_obs_for_split, unsigned int min_num_obs_after_split
 ){
   //Rcout << "Get to start of get_best_trees_sum. \n";
-  
+  bartBMA::utils utils;
   List eval_model;
   NumericVector lik_list;
   List best_subset;
@@ -6389,7 +6393,7 @@ List get_best_trees_sum_update_splits(double less_greedy, double spike_tree, int
           new_mean=update_mean_var(table_subset_curr_round[k],mat_subset_curr_round[k],resids(_,parent_curr_round[k]),a);
         }  
         
-        NumericVector terminal_nodes=find_term_nodes(table_subset_curr_round[k]);
+        NumericVector terminal_nodes=utils.find_term_nodes(table_subset_curr_round[k]);
         updated_curr_preds=update_predictions(table_subset_curr_round[k],mat_subset_curr_round[k],new_mean,D1.n_rows);
         NumericVector test_res;
         
@@ -6576,6 +6580,7 @@ List get_best_trees_exact(double less_greedy, double spike_tree, int s_t_hyperpr
                           NumericMatrix test_data,double alpha,double beta,bool is_test_data,double pen,int num_cp,bool split_rule_node,bool gridpoint,int maxOWsize,int num_splits,int gridsize, bool zero_split,
                           unsigned int min_num_obs_for_split, unsigned int min_num_obs_after_split
 ){
+  bartBMA::utils utils; 
   List eval_model;
   NumericVector lik_list;
   List best_subset;
@@ -6906,7 +6911,7 @@ List get_best_trees_exact(double less_greedy, double spike_tree, int s_t_hyperpr
           new_mean=update_mean_var(table_subset_curr_round[k],mat_subset_curr_round[k],resids(_,parent_curr_round[k]),a);
         }  
         //Rcout << "Line 2533. j = " << j << ". \n";
-        terminal_nodes=find_term_nodes(table_subset_curr_round[k]);
+        terminal_nodes=utils.find_term_nodes(table_subset_curr_round[k]);
         updated_curr_preds=update_predictions(table_subset_curr_round[k],mat_subset_curr_round[k],new_mean,D1.n_rows);
         NumericVector test_res;
         
@@ -7086,6 +7091,8 @@ List get_best_trees_update_splits_exact(double less_greedy, double spike_tree, i
                                         NumericMatrix test_data,double alpha,double beta,bool is_test_data,double pen,int num_cp,bool split_rule_node,bool gridpoint,int maxOWsize,int num_splits,int gridsize, bool zero_split,
                                         unsigned int min_num_obs_for_split, unsigned int min_num_obs_after_split
 ){
+  
+  bartBMA::utils utils; 
   List eval_model;
   NumericVector lik_list;
   List best_subset;
@@ -7393,7 +7400,7 @@ List get_best_trees_update_splits_exact(double less_greedy, double spike_tree, i
           new_mean=update_mean_var(table_subset_curr_round[k],mat_subset_curr_round[k],resids(_,parent_curr_round[k]),a);
         }  
         //Rcout << "Line 2533. j = " << j << ". \n";
-        NumericVector terminal_nodes=find_term_nodes(table_subset_curr_round[k]);
+        NumericVector terminal_nodes=utils.find_term_nodes(table_subset_curr_round[k]);
         updated_curr_preds=update_predictions(table_subset_curr_round[k],mat_subset_curr_round[k],new_mean,D1.n_rows);
         NumericVector test_res;
         
@@ -8311,7 +8318,7 @@ List get_best_trees_sum_update_splits_exact(double less_greedy, double spike_tre
                                             unsigned int min_num_obs_for_split, unsigned int min_num_obs_after_split
 ){
   // Rcout << "Get to start of get_best_trees_sum_update_splits_exact. \n";
-  
+  bartBMA::utils utils; 
   List eval_model;
   NumericVector lik_list;
   List best_subset;
@@ -8831,7 +8838,7 @@ List get_best_trees_sum_update_splits_exact(double less_greedy, double spike_tre
           new_mean=update_mean_var(table_subset_curr_round[k],mat_subset_curr_round[k],resids(_,parent_curr_round[k]),a);
         }  
         
-        NumericVector terminal_nodes=find_term_nodes(table_subset_curr_round[k]);
+        NumericVector terminal_nodes= utils.find_term_nodes(table_subset_curr_round[k]);
         updated_curr_preds=update_predictions(table_subset_curr_round[k],mat_subset_curr_round[k],new_mean,D1.n_rows);
         NumericVector test_res;
         
@@ -9081,10 +9088,11 @@ List get_termobs_test_data(NumericMatrix test_data,NumericMatrix tree_data) {
   
   //term_node_means is a vector storing the terminal node mean values
   
+  bartBMA::utils utils; 
   arma::mat arma_tree(tree_data.begin(), tree_data.nrow(), tree_data.ncol(), false);
   arma::mat testd(test_data.begin(), test_data.nrow(), test_data.ncol(), false);
   //NumericVector internal_nodes=find_internal_nodes_gs(tree_data);
-  NumericVector terminal_nodes=find_term_nodes(tree_data);
+  NumericVector terminal_nodes= utils.find_term_nodes(tree_data);
   //arma::vec arma_terminal_nodes=Rcpp::as<arma::vec>(terminal_nodes);
   //NumericVector tree_predictions;
   
@@ -9212,11 +9220,11 @@ arma::field<arma::uvec> get_termobs_test_data_fields(NumericMatrix test_data,Num
   //tree_data is the tree table with the tree information i.e. split points and split variables and terminal node mean values
   
   //term_node_means is a vector storing the terminal node mean values
-  
+  bartBMA::utils utils; 
   arma::mat arma_tree(tree_data.begin(), tree_data.nrow(), tree_data.ncol(), false);
   arma::mat testd(test_data.begin(), test_data.nrow(), test_data.ncol(), false);
   //NumericVector internal_nodes=find_internal_nodes_gs(tree_data);
-  NumericVector terminal_nodes=find_term_nodes(tree_data);
+  NumericVector terminal_nodes= utils.find_term_nodes(tree_data);
   //arma::vec arma_terminal_nodes=Rcpp::as<arma::vec>(terminal_nodes);
   //NumericVector tree_predictions;
   
@@ -9483,7 +9491,7 @@ arma::mat get_W_test(List sum_treetable ,
                      int n){
   //this will take in a list of obs to node matrices for each tree in the sum make the J matrix assigning observations to terminal nodes
   //J is an nxb_j matrix. It will then iteratively append the J matrix to itself to get the overall W matrix which has dimensions nxsumb_j
-  
+  bartBMA::utils utils; 
   //create empty matrix to which we will append individual J matrices
   arma::mat W(n,0);
   int upsilon=0;
@@ -9491,7 +9499,7 @@ arma::mat get_W_test(List sum_treetable ,
     
     NumericMatrix curr_tree=sum_treetable[j];
     List curr_termobs=termobs_testdata_onemodel[j];
-    NumericVector tree_term_nodes=find_term_nodes(curr_tree);
+    NumericVector tree_term_nodes=utils.find_term_nodes(curr_tree);
     int b_j=tree_term_nodes.size();
     //will make J as we go in BART-BMA no need to create it again here....
     arma::mat Jmat=get_J_test(curr_termobs,tree_term_nodes,n);

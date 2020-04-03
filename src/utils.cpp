@@ -4,6 +4,7 @@ using namespace Rcpp;
 #include "utils.h"
 #include <RcppArmadilloExtensions/sample.h>
 namespace bartBMA { 
+// this function doesn't seem to be used anywhere
 IntegerVector utils::csample_num( 
     IntegerVector x,
     int size,
@@ -122,6 +123,14 @@ NumericVector utils::remove_zero(NumericVector nodes_at_depth){
   return(wrap(ret));
 }
 
+NumericVector utils::find_term_nodes(NumericMatrix tree_table){
+  arma::mat arma_tree(tree_table.begin(),tree_table.nrow(), tree_table.ncol(), false); 
+  arma::vec colmat=arma_tree.col(4);
+  arma::uvec term_nodes=arma::find(colmat==-1);
+  term_nodes=term_nodes+1;
+  
+  return(wrap(arma::conv_to<arma::vec>::from(term_nodes)));
+}
 }
 // [[Rcpp::export]]
 NumericMatrix addcol(
@@ -187,5 +196,11 @@ NumericVector remove_zero(NumericVector nodes_at_depth){
   bartBMA::utils obj;
   
   NumericVector result = obj.remove_zero(nodes_at_depth);
+  return result; 
+}
+// [[Rcpp::export]]
+NumericVector find_term_nodes(NumericMatrix tree_table){
+  bartBMA::utils obj;
+  NumericVector result = obj.find_term_nodes(tree_table);
   return result; 
 }
