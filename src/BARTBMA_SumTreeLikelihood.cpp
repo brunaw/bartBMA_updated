@@ -6,82 +6,6 @@ using namespace Rcpp;
 #include "utils.h"
 using bartBMA::utils;
 
-// [[Rcpp::depends(RcppArmadillo)]]
-// [[Rcpp::export]]
-
-NumericMatrix set_daughter_to_end_tree(int grow_node,
-                                       NumericMatrix prior_tree_table_temp,
-                                       double left_daughter){
-  int nrow=prior_tree_table_temp.nrow();
-  arma::mat M=Rcpp::as<arma::mat>(prior_tree_table_temp);
-  // Rcout << "Line 82";
-  M(grow_node-1,5)=0;
-  M(grow_node-1,6)=0;
-  M.insert_rows(nrow,2);
-  // Rcout << "Line 86";
-  
-  M(grow_node-1,0)=left_daughter;
-  M(grow_node-1,1)=left_daughter+1;
-  M(left_daughter-1,4)=-1;
-  M(left_daughter,4)=-1;
-  // Rcout << "Line 92";
-  
-  NumericMatrix s=as<NumericMatrix>(wrap(M));
-  IntegerVector rname=seq_len(s.nrow());
-  
-  List dimnms = // two vec. with static names
-    List::create(rname,
-                 CharacterVector::create("left daughter","right daughter","split var","split point","status","mean","std dev"));
-  // and assign it
-  s.attr("dimnames") = dimnms;
-  
-  return(s);
-}
-
-//######################################################################################################################//
-
-// [[Rcpp::depends(RcppArmadillo)]]
-// [[Rcpp::export]]
-
-NumericMatrix set_daughter_to_end_mat(int d,NumericMatrix prior_tree_matrix_temp,double left_daughter,NumericVector ld_obs,NumericVector rd_obs){
-  int ncol_mat=prior_tree_matrix_temp.ncol();
-  arma::mat N=Rcpp::as<arma::mat>(prior_tree_matrix_temp);
-  arma::vec colmat=N.col(d);
-  NumericVector colmat2=wrap(colmat);
-  
-  if(d+1==ncol_mat){
-    N.insert_cols(ncol_mat,1);
-    int nrow_mat=prior_tree_matrix_temp.nrow();
-    NumericVector colmatzero(nrow_mat);
-    colmatzero[ld_obs]=left_daughter;
-    colmatzero[rd_obs]=left_daughter+1;
-    //colmat=Rcpp::as<arma::vec>(colmatzero);
-    //N.col(d+1)=colmat;
-    N.col(d+1)=Rcpp::as<arma::vec>(colmatzero);
-    
-  }else{
-    //else just update existing column
-    colmat2[ld_obs]=left_daughter;
-    colmat2[rd_obs]=left_daughter+1;
-    //colmat=Rcpp::as<arma::vec>(colmat2);
-    //N.col(d)=colmat; 
-    N.col(d)=Rcpp::as<arma::vec>(colmat2);
-    
-  }
-  
-  return(wrap(N));
-}
-
-//######################################################################################################################//
-
-// [[Rcpp::depends(RcppArmadillo)]]
-// [[Rcpp::export]]
-NumericVector remove_zero(NumericVector nodes_at_depth){
-  arma::vec nodes_at_depth2=Rcpp::as<arma::vec>(nodes_at_depth);
-  arma::vec ret=nodes_at_depth2.elem(arma::find(nodes_at_depth2!=0));
-  return(wrap(ret));
-}
-
 //######################################################################################################################//
 
 // [[Rcpp::export]]
@@ -447,7 +371,7 @@ List grow_tree(arma::mat& xmat,//NumericVector y,
 )
 {
   
-  bartBMA::utils obj;
+  bartBMA::utils utils;
   // Rcout << "Line 489.\n";
   
   NumericMatrix prior_tree_matrix_temp=clone(prior_tree_matrix);
@@ -475,15 +399,15 @@ List grow_tree(arma::mat& xmat,//NumericVector y,
   if(prior_tree_table_temp.nrow()==grow_node){
     // Rcout << "Line 513";
     
-    prior_tree_table_temp = obj.add_rows(prior_tree_table_temp,grow_node);
-    prior_tree_matrix_temp = obj.addcol(prior_tree_matrix_temp,grow_node,ld_obs,rd_obs);  
+    prior_tree_table_temp = utils.add_rows(prior_tree_table_temp,grow_node);
+    prior_tree_matrix_temp = utils.addcol(prior_tree_matrix_temp,grow_node,ld_obs,rd_obs);  
   }else{
     
     //if grow node is in the middle of the tree
     NumericVector nodes_d;
     nodes_d=prior_tree_matrix_temp(_,d);
     NumericVector nodes_at_depth=sort_unique(nodes_d);
-    NumericVector nodes_at_depth1=remove_zero(nodes_at_depth);
+    NumericVector nodes_at_depth1 = utils.remove_zero(nodes_at_depth);
     NumericVector gn_pos=get_gnp(nodes_at_depth1, grow_node);
     arma::uvec prev_uvec= arma::find(as<arma::vec>(nodes_at_depth1)<grow_node);
     arma::vec nontermvec=Rcpp::as<arma::vec>(nodes_at_depth1);
@@ -504,17 +428,18 @@ List grow_tree(arma::mat& xmat,//NumericVector y,
     if(node_to_update.size()==0){
       if(prior_tree_matrix_temp.ncol()>d+1){
         
-        prior_tree_table_temp=set_daughter_to_end_tree(grow_node,prior_tree_table_temp,left_daughter);
+        prior_tree_table_temp=utils.set_daughter_to_end_tree(grow_node,prior_tree_table_temp,left_daughter);
         
         prior_tree_matrix_temp=update_grow_obs(prior_tree_matrix_temp,grow_node,left_daughter,d+1,ld_obs,rd_obs);
       }else{
         
         //if the daughter node number already exists in the tree and existing node numbers have to be updated
         //daughter nodes need to be added to the end of the table not in the center of it
-        prior_tree_table_temp=set_daughter_to_end_tree(grow_node,prior_tree_table_temp,left_daughter);
+        prior_tree_table_temp=utils.set_daughter_to_end_tree(grow_node,prior_tree_table_temp,left_daughter);
         
         
-        prior_tree_matrix_temp=set_daughter_to_end_mat(d,prior_tree_matrix_temp,left_daughter,ld_obs,rd_obs);
+        prior_tree_matrix_temp = utils.set_daughter_to_end_mat(
+          d, prior_tree_matrix_temp, left_daughter, ld_obs, rd_obs);
       }
     }else{
       
@@ -1304,11 +1229,13 @@ arma::mat J(NumericMatrix obs_to_nodes_temp,NumericVector tree_term_nodes){
 NumericVector mu_vector(List sum_treetable,int n){
   NumericVector mu_vec;
   
+  bartBMA::utils utils; 
+  
   for(int j=0;j<sum_treetable.size();j++){    
     NumericMatrix curr_tree=sum_treetable[j];
     NumericVector tree_term_nodes=find_term_nodes(curr_tree);
     NumericVector term_means1=curr_tree(_,5);
-    NumericVector term_means=remove_zero(term_means1);
+    NumericVector term_means=utils.remove_zero(term_means1);
     
     for(int i=0;i<term_means.size();i++){
       mu_vec.push_back(term_means[i]);  
